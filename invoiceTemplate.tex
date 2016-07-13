@@ -1,0 +1,62 @@
+\documentclass[a4paper,12pt]{article}
+
+% Configuration
+\input{TEMPconfig}
+\input{TEMPinvoiceInfo}
+\newcommand{\customerAddress}{\input{TEMPcustomerAddress}}
+\newcommand{\invoiceNumber}{\input{TEMPinvoiceNumber}}
+
+% Packages
+\usepackage{array}
+	\renewcommand{\arraystretch}{1.4}
+	\setlength{\tabcolsep}{10pt}
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage[T1]{fontenc}
+\usepackage{multicol}
+
+
+
+
+% Custom commands
+\newcommand{\n}{\newline}
+
+% Set margins
+\setlength{\voffset}{-2cm}
+\addtolength{\textheight}{4cm}
+\addtolength{\hoffset}{-1.5cm}
+\addtolength{\textwidth}{3cm}
+
+\begin{document}
+
+\noindent \parbox[t]{0.5\textwidth}{ {\Huge INVOICE}\\ \#\invoiceNumber\\ ~\\ \today\\ ~\\ {\color{gray}Bill to:}\\\noindent \customerAddress}
+\hfill
+\parbox[t]{0.35\textwidth}{\raggedleft {\large\myName}\\ \myAddress\\~\\ \myPhoneNumber\\ \myEmail}\\
+\begin{center}
+	\begin{tabular}{| >{\small\raggedright}p{0.15\textwidth} | >{\raggedright}p{0.36\textwidth} | r | c | r |}
+		\hline
+		\normalsize ID & Description & Rate (\pounds) & Qty & Amount (\pounds)\\
+		\hline
+		\invoiceInfo
+		\hline
+	\end{tabular}
+\end{center}
+\vfill
+\begin{multicols}{2}
+	 \noindent Payment is due within 30 days of receipt of this invoice.\\
+
+	\noindent{\color{gray}Payment details:} \\ Account \#: \accountNumber \\ Sort code: \sortCode\\
+	
+	\columnbreak
+	\begin{flushright}
+		\begin{tabular}{ r r }
+			Sub total: & \pounds\subtotal\\
+%			VAT: & \pounds{0.00}\\
+			\hline
+			Discount: & --\pounds\discount\\
+			Shipping: & \pounds\shipping\\
+			\hline \hline
+			\bf Amount Due: & \bf\pounds\grandtotal
+		\end{tabular}
+	\end{flushright}
+\end{multicols}
+\end{document}
