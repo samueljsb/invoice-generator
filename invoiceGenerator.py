@@ -24,14 +24,14 @@ import re
 logging.basicConfig(level=logging.DEBUG, format='- %(levelname)s - %(message)s') # config logging messages
 
 # Logging options
-#logging.disable(logging.INFO) # disable all log messages for DEBUG and INFO
+logging.disable(logging.INFO) # disable all log messages for DEBUG and INFO
 #logging.disable(logging.CRITICAL) # disable *all* log messages
 
 # Options
 CURRENCY = "GBP" # N.B. this does not yet affect functionality
 titleWidth = 30 # width of title bars
-# Set destination directory of generated invoices
-pathToSave = os.path.expanduser('~/Dropbox/Invoices/')
+pathToSave = os.path.expanduser('~/Dropbox/Invoices/')# set destination directory of generated invoices
+pathToCSV = os.path.expanduser('~/Desktop/invoiceDate.csv')
 
 # Check we're using python2. If not, create raw_input function. (creating this for python2 would break it)
 if sys.version_info[0] > 2:
@@ -131,9 +131,13 @@ class InvoiceEntry(object):
     def __init__(self,id=None,description=None,rate=None,qty=None):
         '''
         Initialization function
+        
+        self, description: str
+        rate, qty: float
         '''
 
-        print( "\nNew Fee (leave blank to skip)" )
+        if (not id) | (not description) | (not rate) | (not qty): # if something missing, collect it
+            print( "\nNew Fee (leave blank to skip)" )
 
         if id == None:
             id = tryInput("ID: ")
@@ -144,12 +148,11 @@ class InvoiceEntry(object):
         if qty == None:
             qty = float(numInput("Quantity: "))
 
+        assert (type(rate) == float) & (type(qty) == float) # check qty and rate are numbers
+
         amount = rate * qty
 
         self.id, self.description, self.rate, self.qty, self.amount = id, description, rate, qty, amount
-
-        print( "(new fee entered: £%s)" % twoDP(amount) )
-
 
     def getID(self):
         '''
@@ -189,7 +192,7 @@ class InvoiceEntry(object):
 
 class Invoice(object):
     '''
-    Representation of an invoice containing projects
+    Representation of an invoice
     '''
 
     def __init__(self,customerAccounts,accountName=None):
@@ -248,25 +251,27 @@ class Invoice(object):
 
     def getEntries(self):
         '''
-        Returns the projects attribute of the invoice (list of Project objects)
+        Returns the entries attribute of the invoice (list of InvoiceEntry objects)
         '''
 
         return self.entries
 
     def getEntry(self,index):
         '''
-        Returns the project 'index' from the projects attribute of the invoice (Project object)
+        Returns the entry 'index' from the entries attribute of the invoice (InvoiceEntry object)
         '''
 
         return self.entries[index]
 
     def addEntry(self,entry):
         '''
-        Adds a project (Project object) to the projects attribute.
+        Adds an entry (InvoiceObject object) to the entries attribute and updates the sub total.
         '''
 
         self.entries.append(entry)
         self.subTotal += entry.getAmount()
+        
+        print( "(new entry: £%s)" % twoDP(entry.getAmount()) )
 
     def getInvoiceCode(self,latex=True):
         '''
@@ -440,7 +445,7 @@ def generateInvoice(invoice):
     # Delete temporary files
     shutil.rmtree('TEMPfiles')
 
-    print( "Invoice generated successfully! (%s.pdf)" % invoice.getFilename() )
+    print( "Invoice generated successfully! (%s.pdf for £%s)" % (invoice.getFilename(), twoDP(invoice.getTotal()))
 
     # Save Invoice object in binary file
     # N.B. Not in this version. Will be updated to save each customer account as one binary file with invoices
@@ -505,8 +510,17 @@ def newInvoiceMenu(invoice):
             break # return to invoice menu
 
         elif menuChoice == '2': # add entries from csv
+            
+            print( "Importing data from csv file..." )
 
-            inDevelopment('Add entries from CSV',error=True)
+            with open(pathToCSV) as csvFile:
+                entryData = csv.reader(csvFile)
+                next(entryData, None) #skip header
+                for row in entryData:
+                    newEntry = InvoiceEntry(id=row[0],description=row[1],rate=float(row[2]),qty=float(row[3]))
+                    invoice.addEntry(newEntry)
+        
+            print( "Entries successfully added!" )
 
             break # return to invoice menu
 
@@ -527,48 +541,6 @@ def newInvoiceMenu(invoice):
             print( "That is not a valid choice. Please try again:" )
 
     return newInvoiceMenu(invoice)
-
-def projectMenu(project,invoiceCode=None):
-    '''
-    Menu for adding items to a project.
-
-    project: Project object
-    invoiceCode: identifier for the invoice this belongs to
-    '''
-
-    printUnderline("Project: %s (%s)" % (project.getName(),project.getParent().getInvoiceCode(latex=False)))
-    print( "1: Add fee \n2: Add expense \n3: Add expense (foreign currency) \nexit: Save and return to Invoice menu" )
-
-    while True:
-        menuChoice = raw_input(">> ")
-
-        if menuChoice == '1': # add fee
-
-            project.addFee()
-
-            break # return to project menu
-
-        elif menuChoice == '2': # add EBC
-
-            project.addEBC()
-
-            break # return to project menu
-
-        elif menuChoice == '3': # add EFC
-
-            project.addEFC()
-
-            break # return to project menu
-
-        elif menuChoice == '0' or menuChoice.lower() == 'exit': # return project to invoice menu
-
-            print( "Saving project..." )
-            return project
-
-        else:
-            print( "That is not a valid choice. Please try again:" )
-
-    return projectMenu(project)
 
 def configUtil():
     '''

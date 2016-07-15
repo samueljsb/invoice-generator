@@ -1,11 +1,12 @@
 # Invoice Generator
-_by Samuel Searles-Bryant, last updated 2016-07-13._
+_by Samuel J. Searles-Bryant, last updated 2016-07-13._
 
 A Python script to generate PDF invoices from a LaTeX template.
 
 This program contains the following files:
-- invoiceGenerator.py
-- invoiceTemplate.tex
+  
+* invoiceGenerator.py
+* invoiceTemplate.tex
 
 The script will create a 'config' file and 'customers.json' during the first time it is run.
 
@@ -19,8 +20,9 @@ The script will create a 'config' file and 'customers.json' during the first tim
 - Currently written for UK users (GBP and A4 paper)
 
 ## Notes
-- The invoice will be saved in the location specified by _pathToSave_ (line 33). This is set by default to _~/Dropbox/Invoices/_
-- The file name will be *invoice\_\[accountCode\]\_\[number\]*
+- The invoice will be saved in the location specified by `pathToSave` (line 33). This is set by default to _~/Dropbox/Invoices/_.
+- The file name will be *invoice\_\[accountCode\]\_\[number\]*.
+- The path to the csv file to import entries from is specified by `pathToCSV` (line 44). This is set by default to _~/Desktop/invoiceData_.
 - This script works on Mac OS X 10.11.5. I have not tested it on Windows
 - The template will work with up to 24 sing-line entries (given a 4-line customer address). Beyond that the table may move to a second page, and the template will no longer function as expected. This may be supported in a future version
 
