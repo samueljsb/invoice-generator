@@ -1,5 +1,5 @@
 # Invoice Generator
-_by Samuel J. Searles-Bryant, last updated 2016-07-13._
+_by Samuel J. Searles-Bryant, last updated 2016-08-01._
 
 A Python script to generate PDF invoices from a LaTeX template.
 
@@ -11,10 +11,10 @@ This program contains the following files:
 The script will create a 'config' file and 'customers.json' during the first time it is run.
 
 ## Dependencies
-- Python 3+ (the script should be compatible with Python 2.7, but this is not garuanteed).
-- Python packages: _json_, _csv_, _shelve_, _sys_, _subprocess_, _os_, _shutil_, _logging_, _re_.
+- Python 3+ (the script should be compatible with Python 2.7, but this is not guaranteed).
+- Python packages: `json`, `csv`, `shelve`, `sys`, `subprocess`, `os`, `shutil`, `logging`, `re`.
 - A working installation of LaTeX; uses pdfLaTeX to generate the document.
-- LaTeX packages: _array_, _xcolor_, _fontenc_, _multicol_. These should be packaged with most LaTeX distributions.
+- LaTeX packages: `array`, `xcolor`, `fontenc`, `multicol`. These should be packaged with most LaTeX distributions.
 
 ### Localisation
 - Currently written for UK users (GBP and A4 paper)
@@ -27,10 +27,6 @@ The script will create a 'config' file and 'customers.json' during the first tim
 - The template will work with up to 24 sing-line entries (given a 4-line customer address). Beyond that the table may move to a second page, and the template will no longer function as expected. This may be supported in a future version
 
 ### Upcoming features
-- Ensure input (don't let the user put empty strings as account names, addresses, etc.) (implement _tryInput_)
-- Ensure numerical input (implement _numInput_)
-- Implement discounts
-- Implement shipping costs
 - Create option to allow other localisations (e.g. USD and letter paper)
 
 

@@ -7,13 +7,12 @@ Invoice Generator
 Author: Samuel Searles-Bryant
 Date created: 2016-02-22
 
-Last updated: 2016-07-13
+Last updated: 2016-08-01
 
 N.B.    This program requires pdflatex.
-        Currently shelves each invoice object into its own binary file when generating the invoice. WARNING: binary files created by python2 and python3+ are incompatible
 '''
 
-VERSION = "v0.3"
+VERSION = "v0.3.3"
 
 # Import modules
 import json, csv, shelve # for opening/saving files and data
@@ -29,9 +28,9 @@ logging.disable(logging.INFO) # disable all log messages for DEBUG and INFO
 
 # Options
 CURRENCY = "GBP" # N.B. this does not yet affect functionality
-titleWidth = 30 # width of title bars
+titleWidth = 50 # width of title bars
 pathToSave = os.path.expanduser('~/Dropbox/Invoices/')# set destination directory of generated invoices
-pathToCSV = os.path.expanduser('~/Desktop/invoiceDate.csv')
+pathToCSV = os.path.expanduser('~/Desktop/invoiceData.csv')
 
 # Check we're using python2. If not, create raw_input function. (creating this for python2 would break it)
 if sys.version_info[0] > 2:
@@ -211,7 +210,9 @@ class Invoice(object):
         self.entries = []
         self.subTotal = 0.
         self.shipping = 0.
+        self.showShipping = False
         self.discount = 0.
+        self.showDiscount = False
 
     def getCustomer(self):
         '''
@@ -231,8 +232,18 @@ class Invoice(object):
         '''
         Returns the shipping attribute of the invoice object (float)
         '''
+        
+        return float(self.shipping)
 
-        return self.shipping
+    def getShippingLine(self):
+        '''
+        Returns the shipping attribute of the invoice object in a string formatted for the TeX table (string) is showShipping == True
+        '''
+        
+        if self.showShipping:
+            return r"Shipping: & \pounds{%s}\\" % twoDP(self.shipping)
+        else:
+            return ""
 
     def getDiscount(self):
         '''
@@ -240,6 +251,16 @@ class Invoice(object):
         '''
 
         return self.discount
+
+    def getDiscountLine(self):
+        '''
+        Returns the shipping attribute of the invoice object in a string formatted for the TeX table (string)
+        '''
+        
+        if self.showDiscount:
+            return r"Discount: & \pounds{%s}\\" % twoDP(self.discount)
+        else:
+            return ""
 
     def getTotal(self):
         '''
@@ -272,6 +293,22 @@ class Invoice(object):
         self.subTotal += entry.getAmount()
         
         print( "(new entry: £%s)" % twoDP(entry.getAmount()) )
+    
+    def addShipping(self,shippingCost):
+        '''
+        Adds an amount to the shipping total (float)
+        '''
+    
+        self.showShipping = True
+        self.shipping += shippingCost
+
+    def addDiscount(self,discount):
+        '''
+        Adds an amount to the discount total (float)
+        '''
+            
+        self.showDiscount = True
+        self.discount += discount
 
     def getInvoiceCode(self,latex=True):
         '''
@@ -331,11 +368,15 @@ def tryInput(prompt):
 
 def numInput(prompt):
     '''
-    Requests raw input from the user. Raises NoInputError if no input is entered.
+    Requests a number as input from the user. Raises NoInputError if no input is entered or input is not a number.
     '''
 
-    inDevelopment('numInput')
-    input = tryInput(prompt)
+    input = raw_input(prompt)
+    try:
+        input = float(input)
+    except ValueError:
+        raise NoInputError
+    assert type(input) == float
     return input
 
 def addressInput():
@@ -387,11 +428,11 @@ def generateInvoice(invoice):
     print( "\nGenerating invoice..." )
 
     numOfEntries = 0
-    invoiceInfo = r"\newcommand{\subtotal}{%s}\newcommand{\discount}{%s}\newcommand{\shipping}{%s}\newcommand{\grandtotal}{%s}\newcommand{\invoiceInfo}{" % (twoDP(invoice.getSubTotal()),twoDP(invoice.getDiscount()),twoDP(invoice.getShipping()),twoDP(invoice.getTotal()))
+    invoiceInfo = r"\newcommand{\subtotal}{%s}\newcommand{\discount}{%s}\newcommand{\shipping}{%s}\newcommand{\grandtotal}{%s}\newcommand{\invoiceInfo}{" % (twoDP(invoice.getSubTotal()),invoice.getDiscountLine(),invoice.getShippingLine(),twoDP(invoice.getTotal()))
     for entry in invoice.getEntries(): # for each invoice entry
-        invoiceInfo += r"%s & %s & %s & %s & %s \\" % (entry.getID(),entry.getDescription(),twoDP(entry.getRate()),twoDP(entry.getQty()),twoDP(entry.getAmount()))
+        invoiceInfo += r"%s & %s & %s & %s & %s \\" % (entry.getID(),entry.getDescription(),twoDP(entry.getRate()),entry.getQty(),twoDP(entry.getAmount()))
         numOfEntries += 1
-    while numOfEntries < 10:
+    while numOfEntries < 10: # add padding: make sure there are at least 10 entries, so the invoice table isn't too short (because that looks weird)
         invoiceInfo += r"&~\n~&&&\\"
         numOfEntries += 1
     invoiceInfo += "}"
@@ -445,7 +486,7 @@ def generateInvoice(invoice):
     # Delete temporary files
     shutil.rmtree('TEMPfiles')
 
-    print( "Invoice generated successfully! (%s.pdf for £%s)" % (invoice.getFilename(), twoDP(invoice.getTotal()))
+    print( "Invoice generated successfully! (%s.pdf for £%s)" % (invoice.getFilename(), twoDP(invoice.getTotal())) )
 
     # Save Invoice object in binary file
     # N.B. Not in this version. Will be updated to save each customer account as one binary file with invoices
@@ -494,7 +535,13 @@ def newInvoiceMenu(invoice):
     invoice: Invoice object
     '''
     printUnderline("Invoice menu (%s)" % invoice.getInvoiceCode(latex=False))
-    print( "1: Add an entry \n2: Add entries from a CSV file \n3: Generate the invoice \ndel: Return to main menu (without creating an invoice)")# \nexit: Save and return to main menu" ) # save and return not in this version
+    print("""1: Add an entry
+    \r2: Add entries from a CSV file
+    \r3: Add shipping costs
+    \r4: Add a discount
+    \r5: Generate the invoice
+    \rdel: Return to main menu (without creating an invoice)""")
+#    \rexit: Save and return to main menu""") # save and return not in this version
 
     while True:
         menuChoice = raw_input(">> ")
@@ -523,8 +570,28 @@ def newInvoiceMenu(invoice):
             print( "Entries successfully added!" )
 
             break # return to invoice menu
+          
+        elif menuChoice == '3': # add shipping
+          
+          try:
+              newShipping = numInput("\nShipping cost (£): ")
+              invoice.addShipping(newShipping)
+          except NoInputError:
+              print( "No input given. Please try again." )
+              
+          break # return to invoice menu
+              
+        elif menuChoice == '4': # add discount
+          
+          try:
+              newDiscount = numInput("\nDiscount (£): ")
+              invoice.addDiscount(newDiscount)
+          except NoInputError:
+              print( "No input given. Please try again." )
+          
+          break # return to invoice menu
 
-        elif menuChoice == '3': # generate invoice
+        elif menuChoice == '5': # generate invoice
             generateInvoice(invoice)
             return # to main menu
 
@@ -586,8 +653,9 @@ def configUtil():
 if __name__ == "__main__":
 
     os.chdir(os.path.dirname(__file__)) # cd to the location of this python file (and associated data files)
+    os.system('clear')
 
-    print( "\n%"+"-"*(titleWidth-2)+"%" )
+    print( "%"+"-"*(titleWidth-2)+"%" )
     print( "Invoice Generator".center(titleWidth) )
     print( "%"+"-"*(titleWidth-2)+"%" )
     print( "%s%s" % (VERSION.ljust(titleWidth-len(CURRENCY)), CURRENCY) )
@@ -623,7 +691,11 @@ if __name__ == "__main__":
 
     while True:
         printUnderline("Main Menu","=",width=15)
-        print( "1: New invoice \n2: New customer \n3: Edit existing invoice \n4: Run config util\nexit: Save and exit" )
+        print("""1: New invoice
+        \r2: New customer
+        \r3: Edit existing invoice
+        \r4: Run config util
+        \rexit: Save and exit""")
 
         while True:
             menuChoice = raw_input(">> ")
