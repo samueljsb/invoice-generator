@@ -13,9 +13,7 @@
 \usepackage[usenames,dvipsnames]{xcolor}
 \usepackage[T1]{fontenc}
 \usepackage{multicol}
-
-
-
+\usepackage{longtable}
 
 % Custom commands
 \newcommand{\n}{\newline}
@@ -32,13 +30,21 @@
 \hfill
 \parbox[t]{0.35\textwidth}{\raggedleft {\large\myName}\\ \myAddress\\~\\ \myPhoneNumber\\ \myEmail}\\
 \begin{center}
-	\begin{tabular}{| >{\small\raggedright}p{0.15\textwidth} | >{\raggedright}p{0.36\textwidth} | r | c | r |}
+	\begin{longtable}{| >{\small\raggedright}p{0.15\textwidth} | >{\raggedright}p{0.36\textwidth} | r | c | r |}
 		\hline
 		\normalsize ID & Description & Rate (\pounds) & Qty & Amount (\pounds)\\
+		\hline \endfirsthead
 		\hline
+		\multicolumn{5}{c}{\textit{Continued from previous page}} \\
+		\hline
+		\normalsize ID & Description & Rate (\pounds) & Qty & Amount (\pounds)\\
+		\hline \endhead
+		\hline \multicolumn{5}{r}{\textit{Continued on next page}} \\
+		\endfoot
+		\hline
+		\endlastfoot
 		\invoiceInfo
-		\hline
-	\end{tabular}
+	\end{longtable}
 \end{center}
 \vfill
 \begin{multicols}{2}

@@ -7,12 +7,12 @@ Invoice Generator
 Author: Samuel Searles-Bryant
 Date created: 2016-02-22
 
-Last updated: 2016-08-01
+Last updated: 2016-08-07
 
 N.B.    This program requires pdflatex.
 '''
 
-VERSION = "v0.3.3"
+VERSION = "v0.3.4"
 
 # Import modules
 import json, csv, shelve # for opening/saving files and data
@@ -97,20 +97,25 @@ class CustomerAccount(object):
         '''
 
         return self.number
+    
+    def resetNumber(self):
+        '''
+        Resets the invoice number if an invoice is cancelled
+        '''
+    
+        self.number -= 1
 
     def nextInvoiceCode(self,LaTeX=True):
         '''
         Increments the number attribute and returns an invoice code formatted for TeX (raw string) formatted for plain text (string), and the filename for the PDF (string).
         '''
 
-        self.number += 1 # increase invoice number
-        invoiceNumber = str(self.getNumber()) # extract the invoice number as string
-        while len(invoiceNumber) < 3: # make the invoice number 3 figures long
-            invoiceNumber = '0'+invoiceNumber
+        self.number += 1
+#        invoiceNumber = '{:0=3d}'.format(self.getNumber()) # get the next invoice number as 3 digit long string
 
-        invoiceCode = r"\textsc{"+self.getAccountName()+"}--"+invoiceNumber
-        plainInvoiceCode = self.getAccountName()+"_"+invoiceNumber
-        filename = "invoice_"+self.getAccountName()+"_"+invoiceNumber # set filename as invoice_<customer>_<number>
+        invoiceCode = r"\textsc{{{accountName}}}--{number:0=3d}".format(**self.JSONdump())
+        plainInvoiceCode = "{accountName}_{number:0=3d}".format(**self.JSONdump())
+        filename = "invoice_{accountName}_{number:0=3d}".format(**self.JSONdump())
 
         return invoiceCode, plainInvoiceCode, filename
 
@@ -188,6 +193,13 @@ class InvoiceEntry(object):
 
         return self.amount
 
+    def getAllInfo(self):
+        '''
+        Returns all entry info in a dictionary (dict)
+        '''
+        
+        return {'id':self.id,'description':self.description,'rate':twoDP(self.rate),'qty':self.qty,'amount':twoDP(self.amount)}
+
 
 class Invoice(object):
     '''
@@ -241,7 +253,7 @@ class Invoice(object):
         '''
         
         if self.showShipping:
-            return r"Shipping: & \pounds{%s}\\" % twoDP(self.shipping)
+            return r"Shipping: & \pounds{{{}}}\\".format(twoDP(self.shipping))
         else:
             return ""
 
@@ -258,7 +270,7 @@ class Invoice(object):
         '''
         
         if self.showDiscount:
-            return r"Discount: & \pounds{%s}\\" % twoDP(self.discount)
+            return r"Discount: & \pounds{{{}}}\\".format(twoDP(self.discount))
         else:
             return ""
 
@@ -292,7 +304,7 @@ class Invoice(object):
         self.entries.append(entry)
         self.subTotal += entry.getAmount()
         
-        print( "(new entry: £%s)" % twoDP(entry.getAmount()) )
+        print( "(new entry: £{})".format(twoDP(entry.getAmount())) )
     
     def addShipping(self,shippingCost):
         '''
@@ -328,7 +340,7 @@ class Invoice(object):
         return self.filename
 
 
-##### SUBROUTINES #####
+##### FUNCTIONS #####
 def selectCustomer(customerAccounts,selection=None):
     '''
     Requires the user to select a customer from the set of customer accounts.
@@ -381,7 +393,8 @@ def numInput(prompt):
 
 def addressInput():
     '''
-    Requests an address from the user. If no address is given on first line, raises NoInputError. A blank line ends the address. Returns an address (string) formatted for LaTeX.
+    Requests an address from the user. If no address is given on first line, raises NoInputError. A blank line ends the address.
+    Returns an address (string) formatted for LaTeX.
     '''
 
     inputAddress = ""
@@ -406,6 +419,7 @@ def addressInput():
 def phoneInput():
     '''
     Requests a phone number from the user. Formats the phone number appropriately and returns it (string).
+    If the input is not a phone number, raises NoInputError.
     '''
     inDevelopment('phone number input')
     return tryInput("Phone number: ")
@@ -413,6 +427,7 @@ def phoneInput():
 def emailInput():
     '''
     Requests an email address from the user. ensures appropriate formatand returns it (string).
+    If the input is not a valid email address, raises NoInputError.
     '''
     inDevelopment('email address input')
     return tryInput("Email address: ")
@@ -426,11 +441,14 @@ def generateInvoice(invoice):
     '''
 
     print( "\nGenerating invoice..." )
+    
+    if len(invoice.getEntries()) == 0:
+        raise NoInputError
 
     numOfEntries = 0
-    invoiceInfo = r"\newcommand{\subtotal}{%s}\newcommand{\discount}{%s}\newcommand{\shipping}{%s}\newcommand{\grandtotal}{%s}\newcommand{\invoiceInfo}{" % (twoDP(invoice.getSubTotal()),invoice.getDiscountLine(),invoice.getShippingLine(),twoDP(invoice.getTotal()))
+    invoiceInfo = r"\newcommand\subtotal{{{}}}\newcommand\discount{{{}}}\newcommand\shipping{{{}}}\newcommand\grandtotal{{{}}}\newcommand\invoiceInfo{{".format(twoDP(invoice.getSubTotal()),invoice.getDiscountLine(),invoice.getShippingLine(),twoDP(invoice.getTotal()))
     for entry in invoice.getEntries(): # for each invoice entry
-        invoiceInfo += r"%s & %s & %s & %s & %s \\" % (entry.getID(),entry.getDescription(),twoDP(entry.getRate()),entry.getQty(),twoDP(entry.getAmount()))
+        invoiceInfo += r"{id} & {description} & {rate} & {qty} & {amount} \\".format(**entry.getAllInfo())
         numOfEntries += 1
     while numOfEntries < 10: # add padding: make sure there are at least 10 entries, so the invoice table isn't too short (because that looks weird)
         invoiceInfo += r"&~\n~&&&\\"
@@ -462,9 +480,10 @@ def generateInvoice(invoice):
     # Write TEMPconfig.tex
     configData = shelve.open('config')
     userInfo = (configData['userName'],configData['userAddress'],configData['userPhoneNumber'],configData['userEmail'],configData['accountNumber'],configData['sortCodeFormatted'])
+    configInfo = r"\newcommand\myName{{{userName}}}\newcommand\myAddress{{{userAddress}}}\newcommand\myPhoneNumber{{{userPhoneNumber}}}\newcommand\myEmail{{{userEmail}}}\newcommand\accountNumber{{{accountNumber}}}\newcommand\sortCode{{{sortCodeFormatted}}}".format(**configData)
     configData.close()
+
     latexFile = open(os.path.join('TEMPfiles',"TEMPconfig.tex"),'w')
-    configInfo = r"\newcommand{\myName}{%s}\newcommand{\myAddress}{%s}\newcommand{\myPhoneNumber}{%s}\newcommand{\myEmail}{%s}\newcommand{\accountNumber}{%s}\newcommand{\sortCode}{%s}" % userInfo
     latexFile.write(configInfo)
     latexFile.close()
 
@@ -486,7 +505,7 @@ def generateInvoice(invoice):
     # Delete temporary files
     shutil.rmtree('TEMPfiles')
 
-    print( "Invoice generated successfully! (%s.pdf for £%s)" % (invoice.getFilename(), twoDP(invoice.getTotal())) )
+    print( "Invoice generated successfully! ({}.pdf for £{})".format(invoice.getFilename(), twoDP(invoice.getTotal())) )
 
     # Save Invoice object in binary file
     # N.B. Not in this version. Will be updated to save each customer account as one binary file with invoices
@@ -499,16 +518,15 @@ def generateInvoice(invoice):
 #    except:
 #        logging.error("Operation failed. This invoice object was not saved.")
 
-def printUnderline(text,underlineCharacter="-",width=0):
+def printUnderline(text,char="-",width=0):
     '''
     Prints text with underline to correct length
+    char: character to use for underline (str)
+    width: width of underlined text (int)
     '''
 
-    if width < len(text):
-        width = len(text)
-
-    print( "\n"+text.center(width) )
-    print( underlineCharacter*width )
+    text = text.center(width)
+    print('',text,char*len(text),sep='\n')
 
 def twoDP(num):
     '''
@@ -519,9 +537,9 @@ def twoDP(num):
 
 def inDevelopment(featureName="This feature",error=False):
     if error:
-        logging.error("%s is not available in this version." % featureName)
+        logging.error("{} is not available in this version.".format(featureName))
     else:
-        logging.warning("%s is still in development." % featureName)
+        logging.warning("{} is still in development.".format(featureName))
 
 
 ##### END OF SUBROUTINES #####
@@ -534,7 +552,7 @@ def newInvoiceMenu(invoice):
 
     invoice: Invoice object
     '''
-    printUnderline("Invoice menu (%s)" % invoice.getInvoiceCode(latex=False))
+    printUnderline("Invoice menu ({})".format(invoice.getInvoiceCode(latex=False)))
     print("""1: Add an entry
     \r2: Add entries from a CSV file
     \r3: Add shipping costs
@@ -592,7 +610,12 @@ def newInvoiceMenu(invoice):
           break # return to invoice menu
 
         elif menuChoice == '5': # generate invoice
-            generateInvoice(invoice)
+            try:
+                generateInvoice(invoice)
+            except NoInputError:
+                logging.error("There are no entries in this invoice. The invoice was not generated.")
+                break # return to invoice menu
+                    
             return # to main menu
 
         elif menuChoice == '0' or menuChoice.lower() == 'exit': # save and return to main menu
@@ -601,6 +624,7 @@ def newInvoiceMenu(invoice):
             return # to main menu
 
         elif menuChoice.lower() == 'del': # return to main menu
+            invoice.getCustomer().resetNumber()
             print( "Invoice discarded." )
             return # to main menu
 
@@ -630,7 +654,7 @@ def configUtil():
                 break
             except:
                 print( "This is not a valid sort code. Please try again" )
-        sortCodeFormatted = "%s--%s--%s" % (sortCode[0:2],sortCode[2:4],sortCode[4:6])
+        sortCodeFormatted = "{}--{}--{}".format(sortCode[0:2],sortCode[2:4],sortCode[4:6])
     except NoInputError:
         print( "No input... \nNo config file has ben created." )
         return
@@ -658,7 +682,9 @@ if __name__ == "__main__":
     print( "%"+"-"*(titleWidth-2)+"%" )
     print( "Invoice Generator".center(titleWidth) )
     print( "%"+"-"*(titleWidth-2)+"%" )
-    print( "%s%s" % (VERSION.ljust(titleWidth-len(CURRENCY)), CURRENCY) )
+    print( "{}{}".format(VERSION.ljust(titleWidth-len(CURRENCY)), CURRENCY) )
+    
+    assert(not os.path.exists('TEMPfiles/')) # make sure there are no left over TEMPfiles
 
     ## Congifuration
     if not os.path.exists('config'):
@@ -666,7 +692,7 @@ if __name__ == "__main__":
         configUtil()
     else:
         configData = shelve.open('config')
-        print( "Welcome, %s!" % configData['userName'] )
+        print( "Welcome, {userName}!".format(**configData) )
         configData.close()
 
 
@@ -690,7 +716,7 @@ if __name__ == "__main__":
     ## Main menu
 
     while True:
-        printUnderline("Main Menu","=",width=15)
+        printUnderline("Main Menu",char="=",width=15)
         print("""1: New invoice
         \r2: New customer
         \r3: Edit existing invoice
@@ -724,7 +750,7 @@ if __name__ == "__main__":
 
                     # Create new customer account
                     customerAccounts[inputAccountCode] = CustomerAccount(inputAccountCode,inputName,inputAddress,0)
-                    print( "Successfully created new customer account: %s" % inputAccountCode )
+                    print( "Successfully created new customer account: {}".format(inputAccountCode) )
                 except NoInputError:
                     break
 
@@ -760,4 +786,4 @@ if __name__ == "__main__":
                 exit() # exit program
 
             else:
-                print( "That is not a valid choice. Please try again:" )
+                    print( "That is not a valid choice. Please try again:" )

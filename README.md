@@ -14,7 +14,7 @@ The script will create a 'config' file and 'customers.json' during the first tim
 - Python 3+ (the script should be compatible with Python 2.7, but this is not guaranteed).
 - Python packages: `json`, `csv`, `shelve`, `sys`, `subprocess`, `os`, `shutil`, `logging`, `re`.
 - A working installation of LaTeX; uses pdfLaTeX to generate the document.
-- LaTeX packages: `array`, `xcolor`, `fontenc`, `multicol`. These should be packaged with most LaTeX distributions.
+- LaTeX packages: `array`, `xcolor`, `fontenc`, `multicol`, `longtable`. These should be packaged with most LaTeX distributions.
 
 ### Localisation
 - Currently written for UK users (GBP and A4 paper)
@@ -24,7 +24,6 @@ The script will create a 'config' file and 'customers.json' during the first tim
 - The file name will be *invoice\_\[accountCode\]\_\[number\]*.
 - The path to the csv file to import entries from is specified by `pathToCSV` (line 44). This is set by default to _~/Desktop/invoiceData_.
 - This script works on Mac OS X 10.11.5. I have not tested it on Windows
-- The template will work with up to 24 sing-line entries (given a 4-line customer address). Beyond that the table may move to a second page, and the template will no longer function as expected. This may be supported in a future version
 
 ### Upcoming features
 - Create option to allow other localisations (e.g. USD and letter paper)
