@@ -1,0 +1,8 @@
+.DS_Store
+
+## Files with personal data
+config.json
+customers.json
+
+## pycache for modules
+__pycache__/
