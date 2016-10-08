@@ -1,17 +1,17 @@
 # Invoice Generator
-_by Samuel J. Searles-Bryant, last updated 2016-08-01._
+_by Samuel J. Searles-Bryant, last updated 2016-09-16._
 
 A Python script to generate PDF invoices from a LaTeX template.
 
 This program contains the following files:
-  
+
 * invoiceGenerator.py
 * invoiceTemplate.tex
 
 The script will create a 'config' file and 'customers.json' during the first time it is run.
 
 ## Dependencies
-- Python 3+ (the script should be compatible with Python 2.7, but this is not guaranteed).
+- Python 3+.
 - Python packages: `json`, `csv`, `shelve`, `sys`, `subprocess`, `os`, `shutil`, `logging`, `re`.
 - A working installation of LaTeX; uses pdfLaTeX to generate the document.
 - LaTeX packages: `array`, `xcolor`, `fontenc`, `multicol`, `longtable`. These should be packaged with most LaTeX distributions.
