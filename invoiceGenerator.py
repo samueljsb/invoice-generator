@@ -7,7 +7,7 @@ Invoice Generator
 Author: Samuel Searles-Bryant
 Date created: 2016-02-22
 
-Last updated: 2016-09-16
+Last updated: 2016-10-07
 
 N.B.    This program requires pdflatex.
 '''
@@ -15,7 +15,7 @@ N.B.    This program requires pdflatex.
 VERSION = "v0.3.5"
 
 # Import modules
-import json, csv, shelve # for opening/saving files and data
+import json, csv # for opening/saving files and data
 import sys, subprocess # for running system operations
 import os, shutil # for manipulating files
 import logging
@@ -90,11 +90,12 @@ def generateInvoice(invoice):
 
     # Write TEMPconfig.tex
     logging.debug("Opening config")
-    configData = shelve.open('config')
+    configFile = open('config.json','r')
+    configData = json.load(configFile)
     userInfo = (configData['userName'],configData['userAddress'],configData['userPhoneNumber'],configData['userEmail'],configData['accountNumber'],configData['sortCodeFormatted'])
     configInfo = r"\newcommand\myName{{{userName}}}\newcommand\myAddress{{{userAddress}}}\newcommand\myPhoneNumber{{{userPhoneNumber}}}\newcommand\myEmail{{{userEmail}}}\newcommand\accountNumber{{{accountNumber}}}\newcommand\sortCode{{{sortCodeFormatted}}}".format(**configData)
     logging.debug("configInfo collected")
-    configData.close()
+    configFile.close()
     logging.debug("config file closed")
 
     latexFile = open(os.path.join('TEMPfiles',"TEMPconfig.tex"),'w')
@@ -126,18 +127,6 @@ def generateInvoice(invoice):
     shutil.rmtree('TEMPfiles')
 
     print( "Invoice generated successfully! ({}.pdf for £{})".format(invoice.getFilename(), twoDP(invoice.getTotal())) )
-
-    # Save Invoice object in binary file
-    # N.B. Not in this version. Will be updated to save each customer account as one binary file with invoices
-#    print( "Saving invoice object..." )
-#    try:
-#        shelfFile = shelve.open(os.path.join('shelved_invoices',invoice.getFilename()))
-#        shelfFile['invoice'] = invoice
-#        shelfFile.close()
-#        print( "Invoice object saved!" )
-#    except:
-#        logging.error("Operation failed. This invoice object was not saved.")
-
 
 
 ##### MENUS #####

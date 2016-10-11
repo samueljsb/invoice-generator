@@ -8,7 +8,7 @@ This program contains the following files:
 * invoiceGenerator.py
 * invoiceTemplate.tex
 
-The script will create a 'config' file and 'customers.json' during the first time it is run.
+The script will create a 'config.json' file and 'customers.json' during the first time it is run.
 
 ## Dependencies
 - Python 3+.
