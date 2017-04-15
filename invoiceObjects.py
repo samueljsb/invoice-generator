@@ -424,7 +424,7 @@ def twoDP(num):
     Takes a number as an input (num: float or int) and returns a string of the number rounded to 2 decimal places
     '''
 
-    return '{}'.format(round(num,2))
+    return '{:.2f}'.format(round(num,2))
 
 def inDevelopment(featureName="This feature",error=False):
     import logging
