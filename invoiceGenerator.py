@@ -200,7 +200,7 @@ def mainMenu():
 
                 # Save data to JSON file
                 jsonFile = open(pathToCustomers, 'w+')
-                jsonFile.write(json.dumps(dataToSave))
+                jsonFile.write(json.dumps(dataToSave, indent=2, sort_keys=True))
                 jsonFile.close()
 
                 print( "Data saved!" )
@@ -336,7 +336,7 @@ def configUtil():
 
     # Save data to JSON file
     jsonFile = open(pathToConfig, 'w+')
-    jsonFile.write(json.dumps(configData))
+    jsonFile.write(json.dumps(configData, indent=2, sort_keys=True))
     jsonFile.close()
 
     logging.info("Config JSON file created")
