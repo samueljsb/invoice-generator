@@ -337,6 +337,7 @@ def selectCustomer(customerAccounts,selection=None):
             customers.sort() # sort the list alphabetically
             for customer in customers:
                 print( customerAccounts[customer].getAccountName() ) # print account names
+            return selectCustomer(customerAccounts,selection=None)
         else:
             try:
                 customer = customerAccounts[selection.lower()]
